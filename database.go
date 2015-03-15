@@ -86,9 +86,9 @@ func (db *Database) UpsertLink(l *Link) error {
 	}
 	cypher := `MATCH (u:User {id:{0}}), (i:Item {id:{1}})
 				MERGE (u)-[l:LINKED {id:{2}}]->(i)
-				SET l.type = {3}`
+				SET l.type = {3}, l.strength = {4}`
 
-	_, err := db.Exec(cypher, l.UserId, l.ItemId, l.Id, l.Type)
+	_, err := db.Exec(cypher, l.UserId, l.ItemId, l.Id, l.Type, l.Score)
 	return err
 }
 
