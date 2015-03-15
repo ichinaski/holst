@@ -175,7 +175,7 @@ func recommendHandler(ctx *Context, w http.ResponseWriter, r *http.Request) erro
 		where = where + " AND ANY (x IN {" + argPos() + "} WHERE x in item2.categories)"
 	}
 
-	cypher := `MATCH (u:User)-[l1:LINKED]->(item1:Item)<-[l2:LINKED]-(u2:User),
+	cypher := `MATCH (u:User)-[:LINKED]->(item1:Item)<-[:LINKED]-(u2:User),
 		(u2)-[l:LINKED]->(item2:Item)` +
 		where +
 		`AND NOT (u)-[:LINKED]->(item2)
