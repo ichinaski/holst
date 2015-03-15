@@ -1,25 +1,25 @@
 package main
 
 type User struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id   string `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 type Item struct {
-	Id         string   `json:"id"`
-	Name       string   `json:"name"`
-	Categories []string `json:"categories"`
+	Id         string   `json:"id,omitempty"`
+	Name       string   `json:"name,omitempty"`
+	Categories []string `json:"categories,omitempty"`
 }
 
 type Link struct {
-	Id     string `json:"id"`
-	UserId string `json:"userId"`
-	ItemId string `json:"itemId"`
-	Type   string `json:"type"` // Buy, Rate, View, etc. Makes sense to have a fixed set of values?
+	Id     string `json:"id,omitempty"`
+	UserId string `json:"userId,omitempty"`
+	ItemId string `json:"itemId,omitempty"`
+	Type   string `json:"type,omitempty"` // Buy, Rate, View, etc. Makes sense to have a fixed set of values?
 	// TODO: Create user/item support. Optional fields.
 }
 
 type Recommendation struct {
-	Item      Item `json:"item"`
-	Frequency int  `json:"frequency"`
+	Item      Item `json:"item,omitempty"`
+	Frequency int  `json:"frequency,omitempty"`
 }

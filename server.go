@@ -156,14 +156,25 @@ func recommendHandler(ctx *Context, w http.ResponseWriter, r *http.Request) erro
 		return ErrBadRequest
 	}
 
-	cypher := `MATCH (u:User)-[:LINKED]->(item1:Item)<-[:LINKED]-(u2:User),
-						(u2)-[l:LINKED]->(item2:Item)
-					WHERE u.id = {0}
-					AND NOT (u)-[:LINKED]->(item2)
-					RETURN item2.id, item2.name, count(distinct l) as frequency
-					ORDER BY frequency DESC`
+	r.ParseForm()
+	categories := r.Form["category"]
+	Logger.Println(categories)
+	// TODO: Filter recommendations by category, if any
 
-	rows, err := ctx.db.Query(cypher, uid)
+	where := "WHERE u.id = {0}"
+	if len(categories) > 0 {
+		//where = where + " AND item2.categories IN {1}"
+		where = where + " AND ANY (x IN {1} WHERE x in item2.categories)"
+	}
+
+	cypher := `MATCH (u:User)-[:LINKED]->(item1:Item)<-[:LINKED]-(u2:User),
+		(u2)-[l:LINKED]->(item2:Item)` +
+		where +
+		`AND NOT (u)-[:LINKED]->(item2)
+		RETURN item2.id, item2.name, count(distinct l) as frequency
+		ORDER BY frequency DESC`
+
+	rows, err := ctx.db.Query(cypher, uid, categories)
 	if err != nil {
 		return err
 	}

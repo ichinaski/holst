@@ -74,9 +74,9 @@ func (db *Database) UpsertItem(i *Item) error {
 		i.Id = CreateId()
 	}
 	cypher := `MERGE (i:Item {id: {0}})
-				SET i.name = {1}`
+				SET i.name = {1}, i.categories = {2}`
 
-	_, err := db.Exec(cypher, i.Id, i.Name)
+	_, err := db.Exec(cypher, i.Id, i.Name, i.Categories)
 	return err
 }
 
