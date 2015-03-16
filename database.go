@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	_ "gopkg.in/cq.v1"
@@ -90,6 +91,46 @@ func (db *Database) UpsertLink(l *Link) error {
 
 	_, err := db.Exec(cypher, l.UserId, l.ItemId, l.Id, l.Type, l.Score)
 	return err
+}
+
+func (db *Database) Recommend(uid, linkType string, category []string) ([]Recommendation, error) {
+	// Store binding vars in a slice
+	args := []interface{}{}
+	argPos := func() string {
+		return strconv.Itoa(len(args) - 1) // Current var position (string)
+	}
+
+	args = append(args, uid)
+	where := "WHERE u.id = {" + argPos() + "}"
+	if len(category) > 0 {
+		//where = where + " AND ALL (x IN {1} WHERE x in item2.categories)"
+		args = append(args, category)
+		where = where + " AND ANY (x IN {" + argPos() + "} WHERE x in item2.categories)"
+	}
+
+	cypher := `MATCH (u:User)-[:LINKED]->(item1:Item)<-[:LINKED]-(u2:User),
+		(u2)-[l:LINKED]->(item2:Item)` +
+		where +
+		`AND NOT (u)-[:LINKED]->(item2)
+		RETURN item2.id, item2.name, count(distinct l) as frequency
+		ORDER BY frequency DESC`
+
+	rows, err := db.Query(cypher, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	resp := []Recommendation{}
+	for rows.Next() {
+		var rec Recommendation
+		err = rows.Scan(&rec.Item.Id, &rec.Item.Name, &rec.Strength)
+		if err != nil {
+			return nil, err
+		}
+		resp = append(resp, rec)
+	}
+	return resp, nil
 }
 
 func CreateId() string {

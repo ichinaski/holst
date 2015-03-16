@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/golang/gddo/httputil"
 	"github.com/gorilla/mux"
@@ -149,52 +148,20 @@ func linkHandler(w http.ResponseWriter, r *http.Request) error {
 // recommendHandler will manage item recommendations. It currently reads the user id and
 // categories for the recommended items. Matching items must fulfil *any* category
 func recommendHandler(w http.ResponseWriter, r *http.Request) error {
-	uid := mux.Vars(r)["uid"]
+	vars := mux.Vars(r)
+	uid, linkType := vars["uid"], vars["type"]
 	if uid == "" {
 		return ErrBadRequest
 	}
 
 	r.ParseForm()
-	categories := r.Form["category"]
+	category := r.Form["category"]
 
-	// Store binding vars in a slice
-	args := []interface{}{}
-	argPos := func() string {
-		return strconv.Itoa(len(args) - 1) // Current var position (string)
-	}
-
-	args = append(args, uid)
-	where := "WHERE u.id = {" + argPos() + "}"
-	if len(categories) > 0 {
-		//where = where + " AND ALL (x IN {1} WHERE x in item2.categories)"
-		args = append(args, categories)
-		where = where + " AND ANY (x IN {" + argPos() + "} WHERE x in item2.categories)"
-	}
-
-	cypher := `MATCH (u:User)-[:LINKED]->(item1:Item)<-[:LINKED]-(u2:User),
-		(u2)-[l:LINKED]->(item2:Item)` +
-		where +
-		`AND NOT (u)-[:LINKED]->(item2)
-		RETURN item2.id, item2.name, count(distinct l) as frequency
-		ORDER BY frequency DESC`
-
-	rows, err := db.Query(cypher, args...)
+	recs, err := db.Recommend(uid, linkType, category)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
-
-	resp := []Recommendation{}
-	for rows.Next() {
-		var rec Recommendation
-		err = rows.Scan(&rec.Item.Id, &rec.Item.Name, &rec.Strength)
-		if err != nil {
-			return err
-		}
-		resp = append(resp, rec)
-	}
-
-	return writeJSON(w, resp, http.StatusOK)
+	return writeJSON(w, recs, http.StatusOK)
 }
 
 func writeJSON(w http.ResponseWriter, value interface{}, status int) error {
