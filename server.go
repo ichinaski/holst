@@ -27,10 +27,15 @@ var (
 
 func handler(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rv := recover(); rv != nil {
+				Logger.Println("Error: handler panic!")
+				writeAPIError(w, http.StatusInternalServerError)
+			}
+		}()
 		Logger.Printf("%v: %v\n", r.Method, r.URL.Path)
 
 		// TODO: Implement optional authentication param. Transparently handle the auth before calling the handler.
-		// TODO: Panic recover defer function
 		var wb httputil.ResponseBuffer
 		err := f(&wb, r)
 		if err == nil {
