@@ -14,35 +14,32 @@ import (
 
 const neo4jURL = "http://localhost:7474"
 
-var Logger = log.New(os.Stdout, "  ", log.LstdFlags|log.Lshortfile)
+var (
+	db     *Database
+	Logger = log.New(os.Stdout, "  ", log.LstdFlags|log.Lshortfile)
+)
 var (
 	ErrNotFound     = errors.New("Not Found")
 	ErrBadRequest   = errors.New("Bad Request")
 	ErrUnauthorized = errors.New("Unauthorized")
 )
 
+// TODO: Handle request-specific data in Context
 type Context struct {
-	db *Database
 }
 
 func NewContext(r *http.Request) *Context {
-	db := NewDatabase()
-	return &Context{db}
+	return &Context{}
 }
 
 func handler(f func(ctx *Context, w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		Logger.Printf("%v: %v\n", r.Method, r.URL.Path)
 
+		// TODO: Panic recover defer function
+		// TODO: Buffer response
 		ctx := NewContext(r)
-		defer func() {
-			if err := ctx.db.Close(); err != nil {
-				Logger.Println(err)
-			}
-		}()
-
 		err := f(ctx, w, r)
-
 		if err == nil {
 			return
 		}
@@ -71,7 +68,7 @@ func userHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 			return ErrBadRequest
 		}
 
-		err := ctx.db.UpsertUser(user)
+		err := db.UpsertUser(user)
 		if err != nil {
 			return err
 		}
@@ -83,7 +80,7 @@ func userHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 			return ErrBadRequest
 		}
 
-		user := ctx.db.GetUser(id)
+		user := db.GetUser(id)
 		if user == nil {
 			return ErrNotFound
 		}
@@ -101,7 +98,7 @@ func itemHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 			return ErrBadRequest
 		}
 
-		if err := ctx.db.UpsertItem(item); err != nil {
+		if err := db.UpsertItem(item); err != nil {
 			return err
 		}
 		return writeJSON(w, item, http.StatusCreated)
@@ -111,7 +108,7 @@ func itemHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 			return ErrBadRequest
 		}
 
-		item := ctx.db.GetItem(id)
+		item := db.GetItem(id)
 		if item == nil {
 			return ErrNotFound
 		}
@@ -140,7 +137,7 @@ func linkHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 						MERGE (u)-[r:LINKED {type:{4}}]->(i)` // FIXME: No return values?
 			rows, err := ctx.db.Query(cypher, link.User.Id, link.User.Name, link.Item.Id, link.Item.Name, link.Type)
 		*/
-		err := ctx.db.UpsertLink(link)
+		err := db.UpsertLink(link)
 		if err != nil {
 			return err
 		}
@@ -182,7 +179,7 @@ func recommendHandler(ctx *Context, w http.ResponseWriter, r *http.Request) erro
 		RETURN item2.id, item2.name, count(distinct l) as frequency
 		ORDER BY frequency DESC`
 
-	rows, err := ctx.db.Query(cypher, args...)
+	rows, err := db.Query(cypher, args...)
 	if err != nil {
 		return err
 	}
@@ -215,6 +212,7 @@ func writeJSON(w http.ResponseWriter, value interface{}, status int) error {
 
 func main() {
 	// TODO: Create uniqueness constraints in Graph (user id, item id)
+	db = NewDatabase()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/user", handler(userHandler)).Methods("POST")
