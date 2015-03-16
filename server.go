@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/golang/gddo/httputil"
 	"github.com/gorilla/mux"
 	_ "gopkg.in/cq.v1"
 )
@@ -24,42 +25,35 @@ var (
 	ErrUnauthorized = errors.New("Unauthorized")
 )
 
-// TODO: Handle request-specific data in Context
-type Context struct {
-}
-
-func NewContext(r *http.Request) *Context {
-	return &Context{}
-}
-
-func handler(f func(ctx *Context, w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+func handler(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		Logger.Printf("%v: %v\n", r.Method, r.URL.Path)
 
+		// TODO: Implement optional authentication param. Transparently handle the auth before calling the handler.
 		// TODO: Panic recover defer function
-		// TODO: Buffer response
-		ctx := NewContext(r)
-		err := f(ctx, w, r)
+		var wb httputil.ResponseBuffer
+		err := f(&wb, r)
 		if err == nil {
+			wb.WriteTo(w)
 			return
 		}
 
 		Logger.Println("Error: ", err)
 		switch err {
 		case ErrNotFound:
-			http.Error(w, "Not Found", http.StatusNotFound)
+			writeAPIError(w, http.StatusNotFound)
 		case ErrBadRequest:
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			writeAPIError(w, http.StatusBadRequest)
 		case ErrUnauthorized:
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			writeAPIError(w, http.StatusUnauthorized)
 		default:
-			http.Error(w, "Oops!", http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError)
 		}
 
 	}
 }
 
-func userHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+func userHandler(w http.ResponseWriter, r *http.Request) error {
 	switch {
 	case r.Method == "POST":
 		user := &User{}
@@ -89,7 +83,7 @@ func userHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 	return ErrBadRequest
 }
 
-func itemHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+func itemHandler(w http.ResponseWriter, r *http.Request) error {
 	switch {
 	case r.Method == "POST":
 		item := &Item{}
@@ -118,7 +112,7 @@ func itemHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 	return ErrBadRequest
 }
 
-func linkHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+func linkHandler(w http.ResponseWriter, r *http.Request) error {
 	switch {
 	case r.Method == "POST":
 		// For more complex JSON decodings: http://talks.golang.org/2015/json.slide#21
@@ -149,7 +143,7 @@ func linkHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
 
 // recommendHandler will manage item recommendations. It currently reads the user id and
 // categories for the recommended items. Matching items must fulfil *any* category
-func recommendHandler(ctx *Context, w http.ResponseWriter, r *http.Request) error {
+func recommendHandler(w http.ResponseWriter, r *http.Request) error {
 	uid := mux.Vars(r)["uid"]
 	if uid == "" {
 		return ErrBadRequest
@@ -199,15 +193,21 @@ func recommendHandler(ctx *Context, w http.ResponseWriter, r *http.Request) erro
 }
 
 func writeJSON(w http.ResponseWriter, value interface{}, status int) error {
-	body, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
-	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
-	w.Write(body)
-	return nil
+	return json.NewEncoder(w).Encode(value)
+}
+
+func writeAPIError(w http.ResponseWriter, status int) {
+	var data struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	data.Error.Message = http.StatusText(status)
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json; charset=UTF8")
+	json.NewEncoder(w).Encode(&data)
 }
 
 func main() {
