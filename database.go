@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	_ "gopkg.in/cq.v1"
@@ -97,22 +96,26 @@ func (db *Database) Recommend(uid, linkType string, category []string) ([]Recomm
 	// Store binding vars in a slice
 	args := []interface{}{}
 	argPos := func() string {
-		return strconv.Itoa(len(args) - 1) // Current var position (string)
+		return fmt.Sprintf("{%d}", len(args)-1)
 	}
 
 	args = append(args, uid)
-	where := "WHERE u.id = {" + argPos() + "}"
+	where := " WHERE u.id = " + argPos()
+	whereLink := " AND NOT (u)-[:LINKED]->(item2)" // Defaults to any type
 	if len(category) > 0 {
-		//where = where + " AND ALL (x IN {1} WHERE x in item2.categories)"
 		args = append(args, category)
-		where = where + " AND ANY (x IN {" + argPos() + "} WHERE x in item2.categories)"
+		where = where + " AND ANY (x IN " + argPos() + " WHERE x in item2.categories)" // Any category match will be enough
+	}
+	if linkType != "" {
+		args = append(args, linkType)
+		where = where + " AND l1.type = " + argPos() + " AND l2.type = " + argPos() + " AND l3.type = " + argPos()
+		whereLink = " AND NOT (u)-[:LINKED {type:" + argPos() + "}]->(item2)"
 	}
 
-	cypher := `MATCH (u:User)-[:LINKED]->(item1:Item)<-[:LINKED]-(u2:User),
-		(u2)-[l:LINKED]->(item2:Item)` +
-		where +
-		`AND NOT (u)-[:LINKED]->(item2)
-		RETURN item2.id, item2.name, count(distinct l) as frequency
+	cypher := `MATCH (u:User)-[l1:LINKED]->(item1:Item)<-[l2:LINKED]-(u2:User),
+		(u2)-[l3:LINKED]->(item2:Item)` +
+		where + whereLink +
+		` RETURN item2.id, item2.name, count(distinct l3) as frequency
 		ORDER BY frequency DESC`
 
 	rows, err := db.Query(cypher, args...)

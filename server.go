@@ -148,14 +148,17 @@ func linkHandler(w http.ResponseWriter, r *http.Request) error {
 // recommendHandler will manage item recommendations. It currently reads the user id and
 // categories for the recommended items. Matching items must fulfil *any* category
 func recommendHandler(w http.ResponseWriter, r *http.Request) error {
-	vars := mux.Vars(r)
-	uid, linkType := vars["uid"], vars["type"]
+	uid := mux.Vars(r)["uid"]
 	if uid == "" {
 		return ErrBadRequest
 	}
 
 	r.ParseForm()
 	category := r.Form["category"]
+	linkType := ""
+	if len(r.Form["type"]) > 0 {
+		linkType = r.Form["type"][0]
+	}
 
 	recs, err := db.Recommend(uid, linkType, category)
 	if err != nil {
