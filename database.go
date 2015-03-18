@@ -101,20 +101,21 @@ func (db *Database) Recommend(uid, linkType string, category []string) ([]Recomm
 
 	args = append(args, uid)
 	where := " WHERE u.id = " + argPos()
-	whereLink := " AND NOT (u)-[:LINKED]->(item2)" // Defaults to any type
+	whereCat := ""                                 // Defaults to any category
+	whereType := " AND NOT (u)-[:LINKED]->(item2)" // Defaults to any type
 	if len(category) > 0 {
 		args = append(args, category)
-		where = where + " AND ANY (x IN " + argPos() + " WHERE x in item2.categories)" // Any category match will be enough
+		whereCat = " AND ANY (x IN " + argPos() + " WHERE x in item2.categories)" // Any category match will be enough
 	}
 	if linkType != "" {
 		args = append(args, linkType)
-		where = where + " AND l1.type = " + argPos() + " AND l2.type = " + argPos() + " AND l3.type = " + argPos()
-		whereLink = " AND NOT (u)-[:LINKED {type:" + argPos() + "}]->(item2)"
+		whereType = " AND l1.type = " + argPos() + " AND l2.type = " + argPos() + " AND l3.type = " + argPos() +
+			" AND NOT (u)-[:LINKED {type:" + argPos() + "}]->(item2)"
 	}
 
 	cypher := `MATCH (u:User)-[l1:LINKED]->(item1:Item)<-[l2:LINKED]-(u2:User),
 		(u2)-[l3:LINKED]->(item2:Item)` +
-		where + whereLink +
+		where + whereCat + whereType +
 		` RETURN item2.id, item2.name, count(distinct l3) as frequency
 		ORDER BY frequency DESC`
 

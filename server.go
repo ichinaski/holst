@@ -128,13 +128,6 @@ func linkHandler(w http.ResponseWriter, r *http.Request) error {
 			return ErrBadRequest
 		}
 
-		/*
-			// This query needs to match *all* nodes, therefore is not valid
-			cypher := `MERGE (u:User {id:{0}, name:{1}})
-						MERGE (i:Item {id:{2}, name:{3}})
-						MERGE (u)-[r:LINKED {type:{4}}]->(i)` // FIXME: No return values?
-			rows, err := ctx.db.Query(cypher, link.User.Id, link.User.Name, link.Item.Id, link.Item.Name, link.Type)
-		*/
 		err := db.UpsertLink(link)
 		if err != nil {
 			return err
