@@ -12,18 +12,37 @@ import (
 	_ "gopkg.in/cq.v1"
 )
 
-const neo4jURL = "http://localhost:7474"
-
 var (
 	db     *Database
+	config = loadConfig()
 	Logger = log.New(os.Stdout, "  ", log.LstdFlags|log.Lshortfile)
 )
+
 var (
 	ErrNotFound     = errors.New("Not Found")
 	ErrBadRequest   = errors.New("Bad Request")
 	ErrUnauthorized = errors.New("Unauthorized")
 )
 
+func main() {
+	// TODO: Create uniqueness constraints in Graph (user id, item id)
+	db = NewDatabase()
+
+	r := mux.NewRouter()
+	r.HandleFunc("/user", handler(userHandler)).Methods("POST")
+	r.HandleFunc("/user/{id}", handler(userHandler)).Methods("GET")
+	r.HandleFunc("/item", handler(itemHandler)).Methods("POST")
+	r.HandleFunc("/item/{id}", handler(itemHandler)).Methods("GET")
+	r.HandleFunc("/link", handler(linkHandler)).Methods("POST")
+
+	r.HandleFunc("/recommend/{uid}", handler(recommendHandler)).Methods("GET")
+
+	http.Handle("/", r)
+	http.ListenAndServe(":8080", nil)
+}
+
+// handler wraps a custom handler and returns a standard http.HandleFunc,
+// managing common error situations and JSON responses.
 func handler(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -34,7 +53,13 @@ func handler(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerF
 		}()
 		Logger.Printf("%v: %v\n", r.Method, r.URL.Path)
 
-		// TODO: Implement optional authentication param. Transparently handle the auth before calling the handler.
+		// Handle authentication.
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != config.HttpUsername || pass != config.HttpPassword {
+			writeAPIError(w, http.StatusUnauthorized)
+			return
+		}
+
 		var wb httputil.ResponseBuffer
 		err := f(&wb, r)
 		if err == nil {
@@ -57,6 +82,8 @@ func handler(f func(w http.ResponseWriter, r *http.Request) error) http.HandlerF
 	}
 }
 
+// userHandler manages User creation and updates (POST), as well
+// as User retrievals (GET).
 func userHandler(w http.ResponseWriter, r *http.Request) error {
 	switch {
 	case r.Method == "POST":
@@ -87,6 +114,8 @@ func userHandler(w http.ResponseWriter, r *http.Request) error {
 	return ErrBadRequest
 }
 
+// itemHandler manages Item creation and updates (POST), as well
+// as User retrievals (GET).
 func itemHandler(w http.ResponseWriter, r *http.Request) error {
 	switch {
 	case r.Method == "POST":
@@ -116,6 +145,8 @@ func itemHandler(w http.ResponseWriter, r *http.Request) error {
 	return ErrBadRequest
 }
 
+// linkHandler manages Link creation and updates, returning an error
+// if an error is encountered.
 func linkHandler(w http.ResponseWriter, r *http.Request) error {
 	switch {
 	case r.Method == "POST":
@@ -160,12 +191,16 @@ func recommendHandler(w http.ResponseWriter, r *http.Request) error {
 	return writeJSON(w, recs, http.StatusOK)
 }
 
+// writeJSON writes the given value to the http response writer,
+// with the appropriate status code and standard headers.
 func writeJSON(w http.ResponseWriter, value interface{}, status int) error {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 	return json.NewEncoder(w).Encode(value)
 }
 
+// writeAPIError writes the given error to the http response writer,
+// with the appropriate status code and standard headers.
 func writeAPIError(w http.ResponseWriter, status int) {
 	var data struct {
 		Error struct {
@@ -176,33 +211,4 @@ func writeAPIError(w http.ResponseWriter, status int) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 	json.NewEncoder(w).Encode(&data)
-}
-
-func main() {
-	// TODO: Create uniqueness constraints in Graph (user id, item id)
-	db = NewDatabase()
-
-	r := mux.NewRouter()
-	r.HandleFunc("/user", handler(userHandler)).Methods("POST")
-	r.HandleFunc("/user/{id}", handler(userHandler)).Methods("GET")
-	r.HandleFunc("/item", handler(itemHandler)).Methods("POST")
-	r.HandleFunc("/item/{id}", handler(itemHandler)).Methods("GET")
-	r.HandleFunc("/link", handler(linkHandler)).Methods("POST")
-
-	r.HandleFunc("/recommend/{uid}", handler(recommendHandler)).Methods("GET")
-
-	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
-}
-
-func Int(v int) *int {
-	p := new(int)
-	*p = v
-	return p
-}
-
-func String(s string) *string {
-	p := new(string)
-	*p = s
-	return p
 }

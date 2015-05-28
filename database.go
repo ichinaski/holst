@@ -10,18 +10,22 @@ import (
 	_ "gopkg.in/cq.v1"
 )
 
+// Database wraps a sqlx.DB in order to expose a custom, simple API.
 type Database struct {
 	*sqlx.DB
 }
 
+// NewDatabase connects to the Neo4j database and returns
+// a pointer to the newly create Database.
 func NewDatabase() *Database {
-	db, err := sqlx.Connect("neo4j-cypher", neo4jURL)
+	db, err := sqlx.Connect("neo4j-cypher", config.Neo4jAddr)
 	if err != nil {
 		panic(err)
 	}
 	return &Database{db}
 }
 
+// GetUser fetches a user by id.
 func (db *Database) GetUser(id string) *User {
 	cypher := `MATCH (u:User)
 			 	WHERE u.id = {0}
@@ -40,6 +44,7 @@ func (db *Database) GetUser(id string) *User {
 	return user
 }
 
+// GetItem fetches an item by id.
 func (db *Database) GetItem(id string) *Item {
 	cypher := `MATCH (i:Item)
 			 	WHERE i.id = {0}
@@ -58,6 +63,7 @@ func (db *Database) GetItem(id string) *Item {
 	return item
 }
 
+// UpsertUser creates or updates a User.
 func (db *Database) UpsertUser(u *User) error {
 	if u.Id == "" {
 		u.Id = CreateId()
@@ -69,6 +75,7 @@ func (db *Database) UpsertUser(u *User) error {
 	return err
 }
 
+// UpsertItem creates or updates an Item.
 func (db *Database) UpsertItem(i *Item) error {
 	if i.Id == "" {
 		i.Id = CreateId()
@@ -80,6 +87,7 @@ func (db *Database) UpsertItem(i *Item) error {
 	return err
 }
 
+// UpsertLink creates or updates a Link.
 func (db *Database) UpsertLink(l *Link) error {
 	if l.Id == "" {
 		l.Id = CreateId()
@@ -92,6 +100,8 @@ func (db *Database) UpsertLink(l *Link) error {
 	return err
 }
 
+// Recommend retrieves recommended items for the given user, optionally
+// filtering by category. Results are ordered by recommendation strength.
 func (db *Database) Recommend(uid, linkType string, category []string) ([]Recommendation, error) {
 	// Store binding vars in a slice
 	args := []interface{}{}
@@ -137,8 +147,8 @@ func (db *Database) Recommend(uid, linkType string, category []string) ([]Recomm
 	return resp, nil
 }
 
+// CreateId returns an hexadecimal, 8-byte, random ID.
 func CreateId() string {
-	// TODO: Use UUIDs instead
 	id := make([]byte, 8)
 	io.ReadFull(rand.Reader, id)
 	return fmt.Sprintf("%x", id)

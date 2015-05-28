@@ -1,0 +1,5 @@
+{
+    "neo4jAddr" : "http://127.0.0.1:7474",
+    "httpUsername" : "httpclient",
+    "httpPassword" : "secretstuff"
+}

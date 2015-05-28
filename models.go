@@ -1,16 +1,19 @@
 package main
 
+// User represents a user in the system.
 type User struct {
 	Id   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
+// Item represents an item in the system.
 type Item struct {
 	Id         string   `json:"id,omitempty"`
 	Name       string   `json:"name,omitempty"`
 	Categories []string `json:"categories,omitempty"`
 }
 
+// Link represents the relationship between a user and an item.
 type Link struct {
 	Id     string `json:"id,omitempty"`
 	UserId string `json:"userId,omitempty"`
@@ -20,8 +23,8 @@ type Link struct {
 	// TODO: Create user/item support. Optional fields.
 }
 
+// Recommendation represents the item being recommended to a user.
 type Recommendation struct {
-	Item      Item `json:"item,omitempty"`
-	Frequency int  `json:"frequency,omitempty"`
-	Strength  int  `json:"strength,omitempty"` // Item frequency
+	Item     Item `json:"item,omitempty"`
+	Strength int  `json:"strength,omitempty"` // Item frequency
 }

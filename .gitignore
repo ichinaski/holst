@@ -32,3 +32,6 @@ tags
 
 # App executable
 holst
+
+# Config file
+config.json
