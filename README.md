@@ -6,10 +6,10 @@ In a nutshell, a user can have one or multiple relations (links) with an item, w
 
 ## Getting started
 
-* Install and start Neo4j.
-* Install dependencies, and build the app: go get & go build.
-* Copy the sample config file config.json.sample into a new file config.json, under the same directory, and edit this file according to your system configuration
-* Run the app: ./holst
+* Install and start [Neo4j](http://neo4j.com/).
+* Install dependencies, and build the app: `go get & go build`.
+* Copy the sample config file `config.json.sample` into a new file `config.json`, under the same directory, and edit this file according to your system configuration
+* Run the app: `./holst`
 
 
 ## Authorization & Authentication
