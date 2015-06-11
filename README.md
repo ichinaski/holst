@@ -264,3 +264,8 @@ Where *category* can hold multiple values (just concatenate the parameters in th
     ]
 	```
 
+
+## License
+
+This software is distributed under the BSD-style license found in the LICENSE file.
+
