@@ -13,8 +13,7 @@ In a nutshell, a user can have one or multiple relations (links) with an item, w
 
 
 ## Authorization & Authentication
-**TODO**
-
+Current implementation includes temporary authentication mechanism. All requests must include an `Authorization` header, using [Basic access authentication](http://en.wikipedia.org/wiki/Basic_access_authentication). The username and password are directly set up in the `config.json` file.
 
 ## Manage data (CRUD operations)
 
