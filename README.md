@@ -1,6 +1,6 @@
 # Holst
 
-Holst is a *Recommentations Engine as a Service*. Using a minimalist RESTful API, it allows users to create and manage their own sets of data (comprised of *Users*, *Items*, and *Links*), and to retrieve customized recommendations, based on that information.
+Holst is a (minimalist) *Recommentations Engine as a Service*. Using a RESTful API, it allows users to create and manage their own sets of data (comprised of *Users*, *Items*, and *Links*), and to retrieve customized recommendations, based on that information.
 
 In a nutshell, a user can have one or multiple relations (links) with an item, which are subsequently used to compound the recommendations for a given user.
 
