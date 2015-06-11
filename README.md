@@ -4,7 +4,13 @@ Holst is a *Recommentations Engine as a Service*. Using a minimalist RESTful API
 
 In a nutshell, a user can have one or multiple relations (links) with an item, which are subsequently used to compound the recommendations for a given user.
 
-This document explains the API usage for managing the data set and fetching recommendations.
+## Getting started
+
+* Install and start Neo4j.
+* Install dependencies, and build the app: go get & go build.
+* Copy the sample config file config.json.sample into a new file config.json, under the same directory, and edit this file according to your system configuration
+* Run the app: ./holst
+
 
 ## Authorization & Authentication
 **TODO**
