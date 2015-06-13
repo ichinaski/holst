@@ -28,9 +28,9 @@ func NewDatabase() *Database {
 // GetUser fetches a user by id.
 func (db *Database) GetUser(id string) *User {
 	cypher := `MATCH (u:User)
-			 	WHERE u.id = {0}
-			 	RETURN u.id as id, u.name as name
-			 	LIMIT 1`
+	 	WHERE u.id = {0}
+	 	RETURN u.id as id, u.name as name
+	 	LIMIT 1`
 
 	user := &User{}
 	err := db.Get(user, cypher, id)
@@ -47,9 +47,9 @@ func (db *Database) GetUser(id string) *User {
 // GetItem fetches an item by id.
 func (db *Database) GetItem(id string) *Item {
 	cypher := `MATCH (i:Item)
-			 	WHERE i.id = {0}
-			 	RETURN i.id as id, i.name as name
-			 	LIMIT 1`
+	 	WHERE i.id = {0}
+	 	RETURN i.id as id, i.name as name
+	 	LIMIT 1`
 
 	item := &Item{}
 	err := db.Get(item, cypher, id)
@@ -68,8 +68,7 @@ func (db *Database) UpsertUser(u *User) error {
 	if u.Id == "" {
 		u.Id = CreateId()
 	}
-	cypher := `MERGE (u:User {id: {0}})
-				SET u.name = {1}`
+	cypher := `MERGE (u:User {id: {0}}) SET u.name = {1}`
 
 	_, err := db.Exec(cypher, u.Id, u.Name)
 	return err
@@ -80,8 +79,7 @@ func (db *Database) UpsertItem(i *Item) error {
 	if i.Id == "" {
 		i.Id = CreateId()
 	}
-	cypher := `MERGE (i:Item {id: {0}})
-				SET i.name = {1}, i.categories = {2}`
+	cypher := `MERGE (i:Item {id: {0}}) SET i.name = {1}, i.categories = {2}`
 
 	_, err := db.Exec(cypher, i.Id, i.Name, i.Categories)
 	return err
@@ -93,8 +91,8 @@ func (db *Database) UpsertLink(l *Link) error {
 		l.Id = CreateId()
 	}
 	cypher := `MATCH (u:User {id:{0}}), (i:Item {id:{1}})
-				MERGE (u)-[l:LINKED {id:{2}}]->(i)
-				SET l.type = {3}, l.strength = {4}`
+		MERGE (u)-[l:LINKED {id:{2}}]->(i)
+		SET l.type = {3}, l.strength = {4}`
 
 	_, err := db.Exec(cypher, l.UserId, l.ItemId, l.Id, l.Type, l.Score)
 	return err
