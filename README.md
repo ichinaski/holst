@@ -1,8 +1,10 @@
 # Holst
 
-Holst is a (minimalist) *Recommentations Engine as a Service*. Using a RESTful API, it allows users to create and manage their own sets of data (comprised of *Users*, *Items*, and *Links*), and to retrieve customized recommendations, based on that information.
+Holst is a (minimalist) *Recommentations Engine as a Service*, which uses [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering) to compute the recommendations. Using a RESTful API, it allows users to create and manage their own sets of data (comprised of *Users*, *Items*, and *Links*), and to retrieve customized recommendations, based on that information.
 
-In a nutshell, a user can have one or multiple relations (links) with an item, which are subsequently used to compound the recommendations for a given user.
+In a nutshell, a user can have one or multiple relations (links) with an item, which are subsequently used to generate the recommendations for a given user.
+
+*Disclaimer: This tool is not ready for production use yet. I started this a side project that allowed me to play around with Neo4j and graph database concepts. 
 
 ## Getting started
 
@@ -13,7 +15,13 @@ In a nutshell, a user can have one or multiple relations (links) with an item, w
 
 
 ## Authorization & Authentication
-Current implementation includes temporary authentication mechanism. All requests must include an `Authorization` header, using [Basic access authentication](http://en.wikipedia.org/wiki/Basic_access_authentication). The username and password are directly set up in the `config.json` file.
+The current implementation includes a temporary (and rather naive) authentication mechanism. All requests must include an `Authorization` header, using [Basic access authentication](http://en.wikipedia.org/wiki/Basic_access_authentication). The username and password are directly set up in the `config.json` file.
+
+*Hint: If you just want to test the API, you can simply use the default credentials in the sample config file, with the following authorization header:*
+
+```
+Authorization: Basic aHR0cGNsaWVudDpzZWNyZXRzdHVmZg==
+```
 
 ## Manage data (CRUD operations)
 
